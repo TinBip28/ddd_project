@@ -1,0 +1,137 @@
+### ========================================
+### Ticket REST API - xxxx.com
+### Base URL: http://localhost:1122
+### ========================================
+
+@baseUrl = http://localhost:1122
+@ticketId = 1
+
+### ----------------------------------------
+### 1. Tạo ticket mới (với ticket detail)
+POST {{baseUrl}}/ticket/create
+Content-Type: application/json
+
+{
+  "ticket": {
+    "name": "BLACKPINK World Tour 2026 - HCM",
+    "description": "Born Pink World Tour là chuyến lưu diễn vòng quanh thế giới thứ hai của nhóm nhạc nữ Hàn Quốc BLACKPINK. Đừng bỏ lỡ cơ hội bùng nổ cùng 4 cô gái tại Việt Nam!",
+    "startTime": "2026-06-15 19:00:00",
+    "endTime": "2026-06-15 22:00:00"
+  },
+  "detail": {
+    "name": "VIP Courtside",
+    "description": "Chỗ ngồi sát sân thi đấu",
+    "stockInitial": 100,
+    "stockAvailable": 45,
+    "priceOriginal": 1200000
+  }
+}
+
+### Tạo thêm sự kiện 2
+POST {{baseUrl}}/ticket/create
+Content-Type: application/json
+
+{
+  "ticket": {
+    "name": "VBA 2026 - Chung kết bóng rổ",
+    "description": "Trận chung kết kịch tính giữa hai đội bóng hàng đầu Việt Nam. Một đêm không thể bỏ lỡ cho những người yêu bóng rổ!",
+    "startTime": "2026-10-12 18:30:00",
+    "endTime": "2026-10-12 21:30:00"
+  },
+  "detail": {
+    "name": "VIP Courtside",
+    "description": "Chỗ ngồi sát sân thi đấu",
+    "stockInitial": 100,
+    "stockAvailable": 45,
+    "priceOriginal": 1200000
+  }
+}
+
+### Tạo thêm sự kiện 3
+POST {{baseUrl}}/ticket/create
+Content-Type: application/json
+
+{
+  "ticket": {
+    "name": "Show diễn nghệ thuật À Ố Show",
+    "description": "À Ố Show mang đến một góc nhìn mới lạ về văn hóa Việt Nam qua sự kết hợp độc đáo giữa xiếc tre, nhào lộn và múa đương đại.",
+    "startTime": "2026-12-01 20:00:00",
+    "endTime": "2026-12-01 21:30:00"
+  },
+  "detail": {
+    "name": "Zone A",
+    "description": "Vị trí trung tâm",
+    "stockInitial": 300,
+    "stockAvailable": 120,
+    "priceOriginal": 800000
+  }
+}
+
+### Tạo thêm sự kiện 4
+POST {{baseUrl}}/ticket/create
+Content-Type: application/json
+
+{
+  "ticket": {
+    "name": "Show Anh Trai Say Hi 2026",
+    "description": "Show Anh Trai Say Hi 2026 là chương trình âm nhạc đặc biệt với sự tham gia của nhiều nghệ sĩ nổi tiếng.",
+    "startTime": "2026-12-20 20:00:00",
+    "endTime": "2026-12-25 21:30:00"
+  },
+  "detail": {
+    "name": "Zone A",
+    "description": "Vị trí trung tâm",
+    "stockInitial": 200,
+    "stockAvailable": 100,
+    "priceOriginal": 1000000
+  }
+}
+
+### ----------------------------------------
+### 2. Lấy thông tin ticket theo ID
+### GET /ticket/{ticketId}
+### ----------------------------------------
+GET {{baseUrl}}/ticket/active
+Content-Type: application/json
+
+### ----------------------------------------
+### 2. Lấy thông tin ticket theo ID
+### GET /ticket/{ticketId}
+### ----------------------------------------
+GET {{baseUrl}}/ticket/{{ticketId}}
+Content-Type: application/json
+
+### ----------------------------------------
+### 3. Cập nhật ticket
+### PUT /ticket/{ticketId}
+### ----------------------------------------
+PUT {{baseUrl}}/ticket/{{ticketId}}
+Content-Type: application/json
+
+{
+  "name": "Concert ABC - Updated",
+  "description": "Concert held in HCM City - Updated venue",
+  "startTime": "2024-06-01 19:00:00",
+  "endTime": "2024-06-01 23:00:00"
+}
+
+### ----------------------------------------
+### 4. Kích hoạt ticket
+### PUT /ticket/{ticketId}/active
+### ----------------------------------------
+PUT {{baseUrl}}/ticket/{{ticketId}}/active
+Content-Type: application/json
+
+### ----------------------------------------
+### 5. Vô hiệu hóa ticket
+### PUT /ticket/{ticketId}/inactive
+### ----------------------------------------
+PUT {{baseUrl}}/ticket/{{ticketId}}/inactive
+Content-Type: application/json
+
+### ----------------------------------------
+### 6. Xoá ticket (Soft Delete)
+### DELETE /ticket/{ticketId}
+### ----------------------------------------
+DELETE {{baseUrl}}/ticket/{{ticketId}}
+Content-Type: application/json

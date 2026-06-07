@@ -1,0 +1,42 @@
+@startuml
+title Kịch bản 4: Rate Limiter + RabbitMQ - Kiến trúc vững chắc & toàn diện
+
+actor User
+participant "API Gateway\n(Rate Limiter)" as Gateway
+entity "Order Service" as OrderService
+queue "RabbitMQ\n(Message Broker)" as MQ
+participant "Consumers\n(Payment, Inventory,...)" as Consumers
+
+skinparam sequence {
+    LifeLineBorderColor #196F3D
+    LifeLineBackgroundColor #D5F5E3
+}
+
+User -> Gateway : 1. Gửi request đặt hàng
+
+alt Tấn công DDoS / Bot (Traffic bất thường)
+    Gateway --> User : **TỪ CHỐI** với lỗi 429
+else Người dùng thật (Traffic hợp lệ, dù đột biến)
+    Gateway -> OrderService : 2. Cho phép request đi vào
+    activate OrderService #A9CCE3
+
+    OrderService -> MQ : 3. Gửi message "order.created"
+    OrderService --> Gateway : 4. Phản hồi nhanh
+    deactivate OrderService
+
+    Gateway --> User : 5. Phản hồi "Đã tiếp nhận yêu cầu!"
+
+    MQ ->> Consumers : 6. Giao message cho các consumer
+    activate Consumers #FADBD8
+    Consumers -> Consumers : 7. Xử lý nền, song song, đáng tin cậy...
+    deactivate Consumers
+end
+
+note over User, Consumers
+  **Lợi ích kết hợp:**
+  - **Rate Limiter:** Chặn traffic xấu, bảo vệ lớp ngoài cùng.
+  - **RabbitMQ:** Hấp thụ và điều tiết traffic tốt, đảm bảo không mất dữ liệu,
+  cải thiện trải nghiệm người dùng và giúp hệ thống có thể mở rộng.
+end note
+
+@enduml

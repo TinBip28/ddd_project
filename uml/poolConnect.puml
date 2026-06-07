@@ -1,0 +1,50 @@
+@startuml
+' Titling and styling (optional)
+title Database Connection Pool Logic
+skinparam activity {
+    BackgroundColor #LightGray
+    BorderColor #666666
+}
+skinparam diamond {
+    BackgroundColor #White
+    BorderColor #666666
+}
+
+' Start of the flow
+start
+
+:Application requests connection;
+
+if (Does connection pool have idle connections?) then (yes)
+    :Get idle connection;
+    :Execute SQL operation;
+    :Release connection back to pool;
+
+else (no)
+    if (Has number of connections reached max?) then (yes)
+        if (Has it timed out?) then (yes)
+            :Throw connection timeout exception;
+            stop
+        else (no)
+            :Wait for an idle connection;
+            ' The flow might loop back here in a real implementation,
+            ' but this represents the wait state from the diagram.
+            stop
+        endif
+    else (no)
+        :Create new connection;
+        ' The original diagram doesn't link this back to "Execute SQL".
+        ' In a real scenario, it would proceed to use the new connection.
+        ' For faithfulness to the diagram, this path terminates here.
+        stop
+    endif
+endif
+
+stop
+
+' SIGNATURE using legend (more flexible)
+legend bottom right
+  <font color=gray size=10><i>anonystick</i></font>
+endlegend
+
+@enduml

@@ -1,0 +1,50 @@
+@startuml
+title Kịch bản 2: Luồng xử lý Bất đồng bộ (Asynchronous) với RabbitMQ - Giải pháp
+
+actor User
+entity "Order Service" as OrderService
+queue "RabbitMQ\n(Message Broker)" as MQ
+participant "Payment\nConsumer" as PaymentConsumer
+participant "Inventory\nConsumer" as InventoryConsumer
+participant "Notification\nConsumer" as NotificationConsumer
+
+skinparam sequence {
+    LifeLineBorderColor #blue
+    LifeLineBackgroundColor #A9DCDF
+}
+
+User -> OrderService : 1. Gửi request đặt hàng
+activate OrderService
+note right of OrderService
+  Xử lý cực nhanh, chỉ vài mili-giây.
+  Không còn là bottleneck.
+end note
+
+OrderService -> MQ : 2. Gửi message "order.created"
+OrderService --> User : 3. Phản hồi "Đã tiếp nhận yêu cầu!"
+deactivate OrderService
+
+note over User, MQ
+  Người dùng nhận được phản hồi ngay lập tức.
+  1000 request sẽ trở thành 1000 message
+  xếp hàng trong queue, không request nào bị mất.
+end note
+
+par
+    MQ ->> PaymentConsumer : 4a. Giao message cho Payment
+    activate PaymentConsumer
+    PaymentConsumer -> PaymentConsumer: Xử lý thanh toán (1s)
+    deactivate PaymentConsumer
+else
+    MQ ->> InventoryConsumer : 4b. Giao message cho Inventory
+    activate InventoryConsumer
+    InventoryConsumer -> InventoryConsumer: Trừ kho (0.5s)
+    deactivate InventoryConsumer
+else
+    MQ ->> NotificationConsumer : 4c. Giao message cho Notification
+    activate NotificationConsumer
+    NotificationConsumer -> NotificationConsumer: Gửi Email/SMS (2s)
+    deactivate NotificationConsumer
+end
+
+@enduml

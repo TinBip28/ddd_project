@@ -1,0 +1,69 @@
+@startuml
+!theme plain
+title Cache Read Process with Two Requests (A & B)
+
+' === Participant Definition === '
+actor "Request A" as A
+actor "Request B" as B
+participant "Application Server" as Server
+database "Cache" as Cache
+database "Database" as DB
+
+skinparam sequence {
+    ArrowColor #333
+    ActorBorderColor #333
+    LifeLineBorderColor #333
+    ParticipantBorderColor #333
+    DatabaseBorderColor #333
+}
+
+' === Flow 1: Request A queries with a cold cache === '
+== Request A queries (Cold Cache) ==
+
+A -> Server : Request for post {id}
+activate Server
+
+Server -> Cache : Check for key "post:{id}"
+activate Cache
+Cache --> Server : null (Cache miss)
+deactivate Cache
+
+note right of Server #LightYellow
+    Not found in cache,
+    must query the Database.
+end note
+Server -> DB : Read post {id} from DB
+activate DB
+DB --> Server : Return post data
+deactivate DB
+
+Server -> Cache : Write post data to cache
+activate Cache
+Cache --> Server: OK
+deactivate Cache
+
+Server --> A : Return post data
+
+... A few seconds later ...
+
+' === Flow 2: Request B queries with a warm cache === '
+== Request B queries (Warm Cache) ==
+
+B -> Server : Request for the same post {id}
+activate Server
+
+Server -> Cache : Check for key "post:{id}"
+activate Cache
+Cache --> Server: Return post data (Cache hit)
+deactivate Cache
+
+note right of Server #LightGreen
+    **Cache Hit!**
+    Data is returned immediately
+    without querying the Database.
+end note
+
+Server --> B : Return post data
+deactivate Server
+
+@enduml

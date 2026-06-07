@@ -1,0 +1,33 @@
+@startuml
+!theme plain
+title Disadvantage of "Update DB, then Delete Cache" Strategy
+
+' === Participant Definition === '
+actor "Request A (Read)" as A
+actor "Request B (Write)" as B
+entity "Cache" as Cache
+database "Database" as DB
+
+' === Execution Flow === '
+A -> Cache : Cache miss
+A -> DB : Sends request to read value from DB (current value = 1)
+note right of A: This read operation takes time to complete...
+
+' While A is waiting, B performs its write operation '
+B -> DB : Update DB to 2
+B -> Cache : Delete cache
+
+note right of A #LightYellow
+**Due to network/DB latency, A now receives the result**
+of its earlier read command (the old value = 1).
+end note
+A -> Cache : Write old value (1) back to cache
+
+' === Result Annotation === '
+note over A, DB #LightPink
+**Result: DB = 2, Cache = 1 -> Data inconsistency**
+Request A (the read) writes stale data back into the cache
+after Request B (the write) has already updated the DB and invalidated the cache.
+end note
+
+@enduml

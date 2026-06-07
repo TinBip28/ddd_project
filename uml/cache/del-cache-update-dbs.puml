@@ -1,0 +1,20 @@
+@startuml
+!theme plain
+title Consistency Problem: Delete Cache First, then Update DB
+
+actor "Request A (Write)" as A
+actor "Request B (Read)" as B
+entity "Cache" as Cache
+database "Database" as DB
+
+A -> Cache : Delete cache
+B -> Cache : Cache miss
+B -> DB : Read old value from DB (value = 20)
+B -> Cache : Update cache with old value (update to 20)
+A -> DB : Update DB with new value (update to 21)
+
+note over A, DB #LightPink
+**Result: DB = 21, Cache = 20 -> Data inconsistency**
+end note
+
+@enduml

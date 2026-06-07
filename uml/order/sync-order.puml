@@ -1,0 +1,57 @@
+@startuml
+title Kịch bản 1: Luồng xử lý Đồng bộ (Synchronous) - Gây ra vấn đề
+
+actor User
+participant "Web Server\n(200 Threads)" as WebServer
+entity "Order Service" as OrderService
+entity "Payment Service" as PaymentService
+entity "Inventory Service" as InventoryService
+entity "Notification Service" as NotificationService
+
+skinparam sequence {
+    LifeLineBorderColor #blue
+    LifeLineBackgroundColor #A9DCDF
+}
+
+User -> WebServer : 1. Gửi request đặt hàng
+activate WebServer #LightCoral
+
+note right of WebServer
+  Server chỉ có 200 threads.
+  Request thứ 201 trở đi sẽ bị
+  **timeout** hoặc **connection refused**.
+end note
+
+WebServer -> OrderService : 2. Giao cho 1 thread xử lý
+activate OrderService
+
+OrderService -> PaymentService : 3. Xử lý thanh toán
+activate PaymentService
+note right of PaymentService : Blocking Call (1s)
+PaymentService --> OrderService : 4. Thanh toán OK
+deactivate PaymentService
+
+OrderService -> InventoryService : 5. Trừ kho
+activate InventoryService
+note right of InventoryService : Blocking Call (0.5s)
+InventoryService --> OrderService : 6. Trừ kho OK
+deactivate InventoryService
+
+OrderService -> NotificationService : 7. Gửi Email/SMS
+activate NotificationService
+note right of NotificationService : Blocking Call (2s)
+NotificationService --> OrderService : 8. Gửi mail OK
+deactivate NotificationService
+
+OrderService --> WebServer : 9. Xử lý hoàn tất
+deactivate OrderService
+
+WebServer --> User : 10. Phản hồi "Đặt hàng thành công"
+deactivate WebServer
+
+note over User, NotificationService
+  Người dùng phải chờ tổng cộng **3.5 giây**
+  và 1 thread của server bị chiếm giữ suốt thời gian đó.
+end note
+
+@enduml

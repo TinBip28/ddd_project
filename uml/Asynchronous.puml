@@ -1,0 +1,30 @@
+@startuml
+title Flash Sale - Asynchronous Order Flow (English)
+
+actor User
+
+entity "OrderToken Service\n(Order Permission)" as OrderToken
+entity "PlaceOrder Service" as PlaceOrder
+entity "PlaceOrderTask Service\n(Create Task)" as TaskCreator
+entity "Kafka\n(Message Queue)" as MQ
+entity "PlaceOrderTask Service\n(Process Task)" as TaskProcessor
+entity "Orders Table" as Orders
+entity "RedisCacheService\n(Order Result Cache)" as RedisCache
+
+User -> PlaceOrder : 1. Request Place Order
+PlaceOrder -> OrderToken : Request order token
+OrderToken --> PlaceOrder : Return token
+
+PlaceOrder -> TaskCreator : Create order task
+TaskCreator -> MQ : Publish task
+MQ -> TaskProcessor : Push task for processing
+
+TaskProcessor -> Orders : Insert order into DB
+TaskProcessor -> RedisCache : Save order result
+
+User -> PlaceOrder : 2. Query order result
+PlaceOrder -> RedisCache : Fetch result
+RedisCache --> PlaceOrder : Return result
+PlaceOrder --> User : Response (Order success/failure)
+
+@enduml

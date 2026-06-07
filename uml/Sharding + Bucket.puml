@@ -1,0 +1,29 @@
+@startuml
+title Flash Sale - Synchronous Order Flow (English)
+
+actor User
+
+entity "Sentinel\n(Rate Limiter)" as Sentinel
+entity "PlaceOrder Service" as PlaceOrder
+entity "StockCacheService\n(Lua script pre-deduct)" as StockCache
+entity "RedisCacheService\n(Pre-deduction storage)" as RedisCache
+entity "FlashItemDomainService\n(DB stock deduction)" as FlashDomain
+entity "Orders Table" as Orders
+
+User -> Sentinel : Request Place Order
+Sentinel -> PlaceOrder : Pass request
+PlaceOrder -> StockCache : Pre-deduct stock (Lua script)
+StockCache -> RedisCache : Save stock pre-deduction
+
+alt Pre-deduction failed
+    StockCache --> PlaceOrder : Fail
+    PlaceOrder --> User : Out of stock
+else Pre-deduction success
+    StockCache --> FlashDomain : Deduct stock in DB
+    FlashDomain -> Orders : Insert order record
+    Orders --> FlashDomain : OK
+    FlashDomain --> PlaceOrder : Success
+    PlaceOrder --> User : Order Success
+end
+
+@enduml

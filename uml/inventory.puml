@@ -1,0 +1,97 @@
+@startuml
+title Distributed Inventory Management System - Interaction Flow
+
+actor Client
+participant "Inventory Service" as Service
+entity "Local Cache" as LocalCache
+entity "Sharded Bucket" as ShardedBucket
+entity "Central Bucket" as CentralBucket
+entity "Distributed Lock" as Lock
+entity "Message Queue" as MQ
+actor Operator
+
+group Initial Inventory Setup (First Time)
+    Client -> Service: Request: Increase Inventory (First Time)
+    Service -> Service: Validate Parameters
+    Service -> Lock: Acquire Lock
+    activate Lock
+    alt Lock Acquired
+        Lock --> Service: Success
+        Service -> CentralBucket: Check if inventory exists
+        activate CentralBucket
+        CentralBucket --> Service: Does not exist
+
+        Service -> Service: Initialize & Allocate Buckets
+        Service -> CentralBucket: Write main inventory
+        Service -> ShardedBucket: Distribute inventory to shards
+        Service -> LocalCache: Write bucket metadata
+        deactivate CentralBucket
+
+        Service -> Lock: Release Lock
+        deactivate Lock
+        Service --> Client: Response: Success
+    else Lock Not Acquired
+        Lock --> Service: Fail
+        deactivate Lock
+        Service --> Client: Response: Failure (Timeout)
+    end
+end
+
+group Regular Inventory Deduction
+    Client -> Service: Request: Deduct Inventory
+    Service -> Service: Validate Parameters
+    Service -> LocalCache: Get available bucket list
+    activate LocalCache
+    LocalCache --> Service: Return bucket list
+    deactivate LocalCache
+
+    loop Retry Logic
+        Service -> ShardedBucket: Execute deduction on a bucket
+    end
+
+    Service -> Service: Write deduction details
+
+    opt Deduction triggers expansion threshold
+        Service -> MQ: Send async message for bucket expansion
+    end
+
+    Service --> Client: Response: Success
+end
+
+group Asynchronous Bucket Expansion (Scale-up)
+    MQ -> Service: Consume Expansion Message
+    activate Service
+    Service -> Lock: Acquire Lock on Central Bucket
+    activate Lock
+
+    Service -> CentralBucket: Get inventory for distribution
+    activate CentralBucket
+    CentralBucket --> Service: Return inventory
+
+    Service -> ShardedBucket: Add inventory to the bucket
+    Service -> CentralBucket: Deduct distributed inventory
+    deactivate CentralBucket
+
+    Service -> Lock: Release Lock
+    deactivate Lock
+    deactivate Service
+end
+
+group Asynchronous Bucket Decommissioning (Scale-down)
+    ... Can be triggered by low-watermark ...
+    Service -> Lock: Acquire Lock
+    Service -> ShardedBucket: Return inventory to Central Bucket
+    Service -> CentralBucket: Receive inventory
+    Service -> LocalCache: Remove decommissioned bucket metadata
+    Service -> Lock: Release Lock
+end
+
+group Background Replenishment
+    Operator -> Service: Check replenishment forecast
+    Service --> Operator: Display list of items to replenish
+    Operator -> Service: Request: Replenish stock
+    Service -> CentralBucket: Add replenished stock
+end
+
+
+@enduml

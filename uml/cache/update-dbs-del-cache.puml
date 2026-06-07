@@ -1,0 +1,25 @@
+@startuml
+!theme plain
+title Consistency Strategy: Update DB, then Delete Cache
+
+' === Participant Definition === '
+actor "Request A" as A
+actor "Request B" as B
+entity "Cache" as Cache
+database "Database" as DB
+
+' === Execution Flow === '
+A -> DB : Update DB to 1
+B -> DB : Update DB to 2
+B -> Cache : Delete cache
+A -> Cache : Delete cache (this action is harmless as the key is already gone)
+
+' === Result Annotation === '
+note over A, Cache #LightGreen
+**Result: DB = 2, Cache is empty.**
+The next read will result in a "cache miss",
+then fetch the correct data (2) from the DB and repopulate the cache.
+**-> Data becomes consistent.**
+end note
+
+@enduml

@@ -1,0 +1,36 @@
+@startuml
+actor Client
+participant "API Gateway" as Gateway
+participant "Passport (JWT)" as Passport
+participant "JwtStrategy" as Strategy
+participant "Redis" as Redis
+database "MySQL" as DB
+
+== Client gửi request ==
+Client -> Gateway: HTTP Request (Authorization: Bearer <token>)
+
+== Verify JWT ==
+Gateway -> Passport: Extract & verify JWT (with secret)
+Passport -> Strategy: validate(payload.sub)
+
+== Check Redis cache ==
+Strategy -> Redis: GET jwt_user:<sub>
+alt Cache hit
+  Redis --> Strategy: User data
+else Cache miss
+  Redis --> Strategy: null
+  Strategy -> DB: SELECT * FROM users WHERE id=sub
+  DB --> Strategy: User data
+  Strategy -> Redis: SET jwt_user:<sub> = User data (TTL=10m)
+end
+
+== Validation ==
+alt User inactive or not found
+  Strategy --> Passport: UnauthorizedException
+  Passport --> Gateway: 401 Unauthorized
+else User valid
+  Strategy --> Passport: User object
+  Passport --> Gateway: request.user = User
+  Gateway --> Client: 200 OK (with data)
+end
+@enduml

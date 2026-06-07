@@ -1,0 +1,41 @@
+@startuml
+title Kịch bản 3: Chỉ dùng Rate Limiter - Bảo vệ Server, Trải nghiệm Kém
+
+actor "User (1000 người)" as User
+participant "API Gateway\n(với Rate Limiter)" as Gateway
+entity "Order Service" as OrderService
+
+skinparam sequence {
+    LifeLineBorderColor #red
+    LifeLineBackgroundColor #F8D7DA
+}
+
+User -> Gateway : Gửi 1000 request đặt hàng đồng loạt
+
+note right of Gateway
+  Cấu hình: chỉ cho phép
+  100 request / giây
+end note
+
+loop 1000 lần
+    alt Request <= 100/giây (100 người dùng may mắn)
+        Gateway -> OrderService : 1a. Cho phép request đi vào
+        activate OrderService
+        OrderService -> OrderService : 1b. Xử lý đồng bộ... (3.5 giây)
+        OrderService --> Gateway : 1c. Xử lý thành công
+        deactivate OrderService
+        Gateway --> User : 1d. Phản hồi "Đặt hàng thành công" (sau khi chờ rất lâu)
+    else Request > 100/giây (900 người dùng còn lại)
+        Gateway --> User : 2a. **TỪ CHỐI** với lỗi "429 Too Many Requests"
+    end
+end
+
+note over User, OrderService
+  Kết quả:
+  - Server **được bảo vệ**, không sập.
+  - **90%** người dùng nhận được lỗi, gây ra trải nghiệm cực kỳ tệ.
+  - **10%** người dùng đặt được hàng nhưng vẫn phải chờ đợi rất lâu.
+  - Vấn đề cốt lõi về xử lý chậm vẫn còn đó.
+end note
+
+@enduml

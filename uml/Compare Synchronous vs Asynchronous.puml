@@ -1,0 +1,75 @@
+@startuml
+!theme plain
+title Flashsale Order Process - Compare Synchronous vs Asynchronous
+
+actor "User" as User
+entity "API Gateway" as Gateway
+entity "Controller" as Controller
+entity "AuthService" as Auth
+entity "Redis (Cache/Token)" as Redis
+entity "Database (Stock & Orders)" as DB
+entity "OrderService" as OrderService
+entity "Message Queue" as MQ
+
+skinparam sequence {
+    ArrowColor #333
+    ActorBorderColor #333
+    LifeLineBorderColor #333
+    ParticipantBorderColor #333
+    BoxBorderColor #333
+    ActorBackgroundColor #f8f8f8
+    ParticipantBackgroundColor #f0f8ff
+}
+
+User -> Gateway : Place order request
+Gateway -> Controller : Forward request
+Controller -> Auth : Authenticate user
+Auth --> Controller : OK
+
+alt Way 1: Synchronous
+    Controller -> Redis : Check stock
+    alt Stock available
+        Redis --> Controller : Stock OK
+        Controller -> DB : Deduct stock with lock
+        alt DB success
+            DB --> Controller : Stock updated
+            Controller -> DB : Insert order
+            DB --> Controller : Order saved
+            Controller --> User : Order success
+        else DB fail
+            DB --> Controller : Fail
+            Controller --> User : Order failed
+        end
+    else Stock unavailable
+        Redis --> Controller : Out of stock
+        Controller --> User : Fail
+    end
+
+else Way 2: Asynchronous
+    Controller -> Redis : Request order token
+    alt Token available
+        Redis --> Controller : Token granted
+        Controller -> MQ : Push order task
+        Controller --> User : Accepted (Pending)
+
+        MQ -> OrderService : Consume task
+        OrderService -> DB : Deduct stock + Insert order
+        alt DB success
+            DB --> OrderService : OK
+            OrderService -> Redis : Save result SUCCESS
+        else DB fail
+            DB --> OrderService : Fail
+            OrderService -> Redis : Save result FAILED
+        end
+
+        User -> Controller : Poll result (taskId)
+        Controller -> Redis : Get result
+        Redis --> Controller : SUCCESS / FAILED
+        Controller --> User : Final result
+    else Token unavailable
+        Redis --> Controller : Fail
+        Controller --> User : Out of stock
+    end
+end
+
+@enduml

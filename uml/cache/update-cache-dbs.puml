@@ -1,0 +1,19 @@
+@startuml
+!theme plain
+title Consistency Problem: Update Cache First, then DB
+
+actor "Request A" as A
+actor "Request B" as B
+entity "Cache" as Cache
+database "Database" as DB
+
+A -> Cache : Update cache to 1
+B -> Cache : Update cache to 2
+B -> DB : Update DB to 2
+A -> DB : Update DB to 1
+
+note over A, DB #LightPink
+**Result: Cache = 2, DB = 1 -> Data inconsistency**
+end note
+
+@enduml
