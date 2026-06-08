@@ -21,7 +21,7 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class PaymentAppServiceImpl implements PaymentAppService {
     @Autowired
-    private TicketOrderAppService ticketOrderAppService;
+    private org.springframework.web.client.RestTemplate restTemplate;
     @Autowired
     private PaymentDomainService paymentDomainService;
     @Autowired
@@ -34,8 +34,8 @@ public class PaymentAppServiceImpl implements PaymentAppService {
     public String paymentOrder(Long userId, String orderNumber, String method) throws UnsupportedEncodingException {
         log.info("paymentOrder | {} | {} | {}", userId, orderNumber, method);
         // Demo: idempotent
-        String yearMonth = orderNumber.substring(orderNumber.lastIndexOf("-") - 6, orderNumber.lastIndexOf("-")); // Logic lấy yearMonth
-        TicketOrderDTO order = ticketOrderAppService.findByOrderNumber(yearMonth, orderNumber);
+        String url = "http://localhost:8082/order/internal/" + orderNumber;
+        TicketOrderDTO order = restTemplate.getForObject(url, TicketOrderDTO.class);
         if (order == null || order.getOrderStatus() != 0) {
             throw new RuntimeException("Đơn hàng không hợp lệ để thanh toán");
         }
