@@ -3,9 +3,11 @@ package com.xxxx.ddd.domain.service.impl;
 import com.xxxx.ddd.domain.respository.TickerOrderRepository;
 import com.xxxx.ddd.domain.service.TickerOrderDomainService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 @Service
+@Profile("!order")
 public class TickerOrderDomainServiceImpl implements TickerOrderDomainService {
 
     @Autowired

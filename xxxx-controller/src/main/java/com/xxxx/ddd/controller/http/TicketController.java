@@ -206,4 +206,41 @@ public class TicketController {
             return ResultUtil.error(500, e.getMessage());
         }
     }
+
+    @Autowired
+    private com.xxxx.ddd.domain.service.TickerOrderDomainService tickerOrderDomainService;
+
+    @PatchMapping("/internal/{ticketId}/decrease-stock")
+    public boolean decreaseStockInternal(
+            @PathVariable("ticketId") Long ticketId,
+            @RequestParam("quantity") int quantity
+    ) {
+        log.info("Internal: decreaseStockInternal for ticketId: {} | quantity: {}", ticketId, quantity);
+        return tickerOrderDomainService.decreaseStockLevel1(ticketId, quantity);
+    }
+
+    @PatchMapping("/internal/{ticketId}/increase-stock")
+    public boolean increaseStockInternal(
+            @PathVariable("ticketId") Long ticketId,
+            @RequestParam("quantity") int quantity
+    ) {
+        log.info("Internal: increaseStockInternal for ticketId: {} | quantity: {}", ticketId, quantity);
+        return tickerOrderDomainService.increaseStock(ticketId, quantity);
+    }
+
+    @GetMapping("/internal/{ticketId}/stock")
+    public int getStockInternal(@PathVariable("ticketId") Long ticketId) {
+        log.info("Internal: getStockInternal for ticketId: {}", ticketId);
+        return tickerOrderDomainService.getStockAvailable(ticketId);
+    }
+
+    @Autowired
+    private com.xxxx.ddd.domain.service.TicketDetailDomainService ticketDetailDomainService;
+
+    @GetMapping("/internal/{ticketId}/detail")
+    public com.xxxx.ddd.domain.model.entity.TicketDetail getTicketDetailInternal(@PathVariable("ticketId") Long ticketId) {
+        log.info("Internal: getTicketDetailInternal for ticketId: {}", ticketId);
+        return ticketDetailDomainService.getTicketDetailById(ticketId);
+    }
 }
+

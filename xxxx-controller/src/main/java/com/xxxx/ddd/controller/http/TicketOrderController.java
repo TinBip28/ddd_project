@@ -119,4 +119,10 @@ public class TicketOrderController {
         boolean result = ticketOrderAppService.cancelOrder(userId, orderNumber);
         return ResultUtil.data(result);
     }
+
+    @GetMapping("/internal/{orderNumber}")
+    public TicketOrderDTO getOrderInternal(@PathVariable("orderNumber") String orderNumber) {
+        log.info("Internal: getOrderInternal for orderNumber: {}", orderNumber);
+        return ticketOrderAppService.findByOrderNumber(null, orderNumber);
+    }
 }
